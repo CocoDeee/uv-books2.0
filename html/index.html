@@ -1,0 +1,1556 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>uv-books</title>
+<link href="https://fonts.googleapis.com/css2?family=Great+Vibes&family=Zilla+Slab:wght@400;600&family=Dancing+Script:wght@400;700&family=Caveat:wght@400;700&family=Indie+Flower&family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600&family=Lato:wght@400;700&family=Merriweather:wght@400;700&family=Special+Elite&family=Cinzel:wght@400;700&display=swap" rel="stylesheet">
+<style>
+/* ══════════════════════════════════════
+   uv-books · Page-Flip UI
+   ══════════════════════════════════════ */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  background: none !important;
+  width: 100vw; height: 100vh;
+  overflow: hidden;
+  font-family: 'Palatino Linotype', Palatino, 'Book Antiqua', Georgia, serif;
+  -webkit-tap-highlight-color: rgba(0,0,0,0);
+}
+
+/* ── OVERLAY ── */
+#ui {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.85);
+  display: flex; flex-direction: column;
+  justify-content: center; align-items: center;
+  z-index: 9999;
+}
+#ui.hidden { display: none; }
+
+/* ── CLOSE BUTTON ── */
+.close-btn {
+  position: fixed; top: 20px; right: 24px;
+  background: rgba(200,170,120,0.12);
+  border: 1px solid rgba(200,180,140,0.2);
+  color: rgba(200,180,140,0.5);
+  width: 34px; height: 34px; border-radius: 50%;
+  font-size: 15px; cursor: pointer; z-index: 10001;
+  display: flex; align-items: center; justify-content: center;
+  transition: all 0.3s;
+  font-family: inherit;
+}
+.close-btn:hover { background: rgba(200,170,120,0.3); color: #e8d5b8; }
+.close-btn.hidden { display: none; }
+
+/* ══════════════════════════════════════
+   BOOK · 3D Page-Flip Engine
+   ══════════════════════════════════════ */
+
+.uvbook {
+  perspective: 200vw;
+  transition: opacity 0.4s 0.2s;
+}
+
+.pages {
+  width: 44vw; height: 30vw;
+  position: relative;
+  transform-style: preserve-3d;
+  backface-visibility: hidden;
+  border-radius: 4px;
+}
+
+/* ── Page base ── */
+.page {
+  position: absolute; top: 0;
+  width: 22vw; height: 30vw;
+  transform-origin: 0 0;
+  transition: transform 1.4s;
+  backface-visibility: hidden;
+  transform-style: preserve-3d;
+  user-select: none;
+  box-shadow: rgba(0,0,0,0.25) 1px 1px 2px 1px;
+  padding: 2.5%;
+  overflow: hidden;
+}
+
+/* Odd pages → right side */
+.page:nth-child(odd) {
+  right: 0;
+  border-radius: 0 4px 4px 0;
+  background-color: #e8dcc8;
+  background-image: url('uvbookpage.jpg');
+  background-size: cover; background-position: center;
+  transform: rotateY(0deg);
+  pointer-events: all;
+}
+
+/* Even pages → hidden left side */
+.page:nth-child(even) {
+  left: 0;
+  border-radius: 4px 0 0 4px;
+  background-color: #e8dcc8;
+  background-image: url('uvbookpage.jpg');
+  background-size: cover; background-position: center;
+  transform: rotateY(180deg);
+  transform-origin: 100% 0;
+  pointer-events: none;
+}
+
+/* Shadow overlay on pages */
+.page::before {
+  content: '';
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0);
+  transition: background 0.7s;
+  z-index: 2;
+  pointer-events: none;
+}
+.page:nth-child(even)::before { background: rgba(0,0,0,0.15); }
+
+/* ── Flipped states ── */
+.page.flipped:nth-child(odd) {
+  pointer-events: none;
+  transform: rotateY(-180deg);
+}
+.page.flipped:nth-child(odd)::before { background: rgba(0,0,0,0.4); }
+
+.page.flipped:nth-child(even) {
+  pointer-events: all;
+  transform: rotateY(0deg);
+}
+.page.flipped:nth-child(even)::before { background: rgba(0,0,0,0); }
+
+/* ── Reader hover lift ── */
+.page.reader-page:nth-child(odd):not(.flipped):hover {
+  transform: rotateY(-15deg);
+}
+.page.reader-page.flipped:nth-child(even):hover {
+  transform: rotateY(15deg);
+}
+.page.reader-page.flipped:nth-child(even):hover::before {
+  background: rgba(0,0,0,0.03);
+}
+
+/* ══════════════════════════════════════
+   COVERS
+   ══════════════════════════════════════ */
+
+.page.front-cover {
+  background-color: #3d1a0a;
+  background-image: url('uvbookfront.jpg') !important;
+  background-size: cover; background-position: center;
+}
+.page.back-cover {
+  background-color: #3d1a0a;
+  background-image: url('uvbookback.jpg') !important;
+  background-size: cover; background-position: center;
+}
+
+.cover-content {
+  position: relative; z-index: 3;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: flex-start;
+  padding-top: 28%;
+  padding-left: 11%;
+  gap: 14px;
+}
+
+.cover-title-area {
+  background: transparent;
+  padding: 16px 24px;
+  border-radius: 3px;
+  text-align: center;
+  min-width: 60%;
+}
+
+.cover-title-display {
+  font-family: 'Great Vibes', cursive;
+  font-size: 2.2vw; color: #e8d5b8;
+  text-shadow: 1px 1px 3px rgba(0,0,0,0.5);
+  line-height: 1.3;
+}
+
+.cover-author-display {
+  font-size: 0.75vw; color: #c8b090;
+  margin-top: 6px; letter-spacing: 0.12em; font-style: italic;
+}
+
+/* Writer cover input */
+.cover-input {
+  background: rgba(255,250,240,0.1);
+  border: none; border-bottom: 1px solid rgba(200,180,140,0.45);
+  color: #e8d5b8;
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.8vw; text-align: center;
+  width: 80%; padding: 8px 4px;
+  outline: none; caret-color: #e8d5b8;
+}
+.cover-input::placeholder { color: rgba(200,180,140,0.35); }
+
+.cover-btn {
+  background: rgba(200,170,120,0.18);
+  border: 1px solid rgba(200,180,140,0.35);
+  color: #d4c0a0; padding: 8px 22px;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 0.7vw; letter-spacing: 0.1em;
+  cursor: pointer; border-radius: 2px;
+  transition: all 0.3s;
+}
+.cover-btn:hover { background: rgba(200,170,120,0.35); color: #e8d5b8; }
+
+/* ── Font Picker ── */
+.font-picker {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px;
+  width: 80%; margin-top: 10px;
+}
+.font-picker-label {
+  font-size: 0.5vw; color: rgba(200,180,140,0.45);
+  letter-spacing: 0.14em; text-transform: uppercase;
+}
+.font-picker select {
+  width: 100%; padding: 6px 10px;
+  font-size: 0.7vw; color: #e8d5b8;
+  background: rgba(255,250,240,0.08);
+  border: 1px solid rgba(200,180,140,0.25);
+  border-radius: 2px; outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23c8b090' opacity='0.5'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+.font-picker select option {
+  background: #2a1208; color: #e8d5b8;
+}
+.font-preview {
+  font-size: 0.7vw; color: rgba(200,180,140,0.6);
+  font-style: italic; min-height: 1.2em;
+  transition: font-family 0.3s;
+}
+
+/* ══════════════════════════════════════
+   INSIDE FRONT · Decorative
+   ══════════════════════════════════════ */
+
+.inside-front {
+  position: relative; z-index: 3;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  text-align: center; gap: 10px;
+}
+
+.inside-title {
+  font-family: 'Great Vibes', cursive;
+  font-size: 1.8vw; color: #2a1208; line-height: 1.3;
+}
+.inside-author {
+  font-size: 0.65vw; color: #4a2e10;
+  letter-spacing: 0.16em; text-transform: uppercase; opacity: 0.55;
+}
+.inside-ornament {
+  font-size: 1.1vw; color: #8b2a16; opacity: 0.5;
+}
+.inside-rule {
+  width: 35%; height: 1px;
+  background: linear-gradient(90deg, transparent, #a07830, transparent);
+}
+
+/* ══════════════════════════════════════
+   CONTENT PAGES
+   ══════════════════════════════════════ */
+
+.page-inner {
+  position: relative; z-index: 3;
+  width: 100%; height: 100%;
+  display: flex; flex-direction: column;
+}
+
+.page-num {
+  font-size: 0.5vw; color: #4a2e10; opacity: 0.4;
+  letter-spacing: 0.14em; text-transform: uppercase;
+  margin-bottom: 6px; text-align: center;
+}
+
+/* Writer textarea */
+.write-area {
+  flex: 1; width: 100%;
+  background: transparent;
+  border: none; outline: none;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 0.78vw; color: #1a0a06; line-height: 1.88;
+  resize: none; padding: 4px 2px; caret-color: #8b2a16;
+  overflow-y: auto; user-select: text; cursor: text;
+}
+.write-area::placeholder { color: #4a2e10; opacity: 0.2; font-style: italic; }
+
+.char-count {
+  font-size: 0.45vw; color: #4a2e10; opacity: 0.35;
+  text-align: right; margin-top: 2px;
+}
+.char-count.warn { color: #8b2a16; opacity: 0.8; }
+
+/* ── Page Images (Writer + Reader) ── */
+.page-img {
+  position: absolute;
+  border: 1px solid transparent;
+  cursor: move;
+  z-index: 5;
+  min-width: 30px; min-height: 30px;
+}
+.page-img img {
+  width: 100%; height: 100%;
+  object-fit: contain;
+  pointer-events: none;
+  display: block;
+}
+.page-img:hover { border-color: rgba(139,42,22,0.4); }
+.page-img.dragging { opacity: 0.8; border-color: rgba(139,42,22,0.6); }
+.page-img.selected { border-color: rgba(139,42,22,0.6); }
+
+/* Resize handle */
+.img-resize {
+  position: absolute; bottom: -4px; right: -4px;
+  width: 10px; height: 10px;
+  background: #8b2a16; border-radius: 2px;
+  cursor: nwse-resize;
+  display: none; z-index: 6;
+}
+.page-img:hover .img-resize,
+.page-img.selected .img-resize { display: block; }
+
+/* Delete button */
+.img-delete {
+  position: absolute; top: -6px; right: -6px;
+  width: 14px; height: 14px;
+  background: #8b2a16; color: #f5eed8;
+  border: none; border-radius: 50%;
+  font-size: 8px; line-height: 14px; text-align: center;
+  cursor: pointer; display: none; z-index: 6;
+  font-family: inherit;
+}
+.page-img:hover .img-delete,
+.page-img.selected .img-delete { display: block; }
+
+/* Reader images (no controls) */
+.page-img.reader-img {
+  cursor: default;
+  border: none;
+}
+.page-img.reader-img .img-resize,
+.page-img.reader-img .img-delete { display: none !important; }
+
+/* Add image button */
+.add-img-btn {
+  position: absolute; top: 4px; right: 4px;
+  width: 20px; height: 20px;
+  background: rgba(90,50,20,0.08);
+  border: 1px solid rgba(90,50,20,0.15);
+  border-radius: 3px;
+  color: #4a2e10; opacity: 0.3;
+  font-size: 12px; line-height: 18px;
+  text-align: center; cursor: pointer;
+  z-index: 6; font-family: inherit;
+  transition: all 0.2s;
+}
+.add-img-btn:hover { opacity: 0.7; background: rgba(90,50,20,0.15); }
+
+/* URL input popup */
+.img-url-popup {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  background: #f0e8d5;
+  border: 1px solid rgba(90,50,20,0.25);
+  border-radius: 4px;
+  padding: 10px 12px;
+  z-index: 10; width: 85%;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.3);
+}
+.img-url-popup input {
+  width: 100%; background: transparent;
+  border: none; border-bottom: 1px solid rgba(90,60,20,0.25);
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 0.6vw; color: #1a0a06;
+  padding: 4px 2px; outline: none; caret-color: #8b2a16;
+}
+.img-url-popup .popup-row {
+  display: flex; gap: 6px; margin-top: 8px; justify-content: flex-end;
+}
+.img-url-popup button {
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 0.5vw; padding: 4px 10px;
+  border-radius: 2px; cursor: pointer; border: none;
+}
+.img-url-popup .popup-add {
+  background: #5a0e08; color: #f5eed8;
+}
+.img-url-popup .popup-cancel {
+  background: transparent; color: #4a2e10;
+  border: 1px solid rgba(90,50,20,0.2);
+}
+
+/* Reader text */
+.read-text {
+  flex: 1;
+  font-size: 0.78vw; color: #1a0a06; line-height: 1.9;
+  white-space: pre-wrap; overflow: hidden; opacity: 0.88;
+}
+
+/* ══════════════════════════════════════
+   WRITER NAVIGATION BAR
+   ══════════════════════════════════════ */
+
+.writer-nav {
+  display: flex; align-items: center;
+  gap: 10px; margin-top: 18px;
+  position: relative; z-index: 10;
+}
+.writer-nav.hidden { display: none; }
+
+.writer-nav button {
+  background: rgba(200,170,120,0.12);
+  border: 1px solid rgba(200,180,140,0.25);
+  color: #c8b090; padding: 8px 20px;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 11px; letter-spacing: 0.06em;
+  cursor: pointer; border-radius: 2px;
+  transition: all 0.3s;
+}
+.writer-nav button:hover:not(:disabled) {
+  background: rgba(200,170,120,0.25); color: #e8d5b8;
+}
+.writer-nav button:disabled { opacity: 0.2; cursor: default; }
+
+.nav-finish {
+  background: rgba(139,42,22,0.5) !important;
+  border-color: rgba(139,42,22,0.35) !important;
+  margin-left: 8px;
+}
+.nav-finish:hover:not(:disabled) {
+  background: rgba(139,42,22,0.7) !important;
+}
+
+.nav-save {
+  background: rgba(90,80,50,0.35) !important;
+  border-color: rgba(180,170,120,0.3) !important;
+  margin-right: 8px;
+}
+.nav-save:hover:not(:disabled) {
+  background: rgba(90,80,50,0.55) !important;
+}
+
+.nav-center {
+  display: flex; flex-direction: column;
+  align-items: center; gap: 6px; min-width: 140px;
+}
+
+.nav-info {
+  color: rgba(200,180,140,0.45);
+  font-size: 10px; letter-spacing: 0.12em;
+  text-align: center;
+}
+
+/* Dots */
+#dots {
+  display: flex; gap: 3px; justify-content: center;
+}
+.dot {
+  width: 4px; height: 4px; border-radius: 50%;
+  background: rgba(200,180,140,0.18);
+}
+.dot.has { background: rgba(200,180,140,0.55); }
+.dot.cur { background: #c97a5a; }
+
+/* ══════════════════════════════════════
+   SIGN / PUBLISH OVERLAYS
+   ══════════════════════════════════════ */
+
+.overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 10000;
+}
+.overlay.hidden { display: none; }
+
+.overlay-panel {
+  background: linear-gradient(145deg, #f0e8d5, #e8d9c6);
+  border-radius: 6px; padding: 28px 34px;
+  max-width: 360px; width: 90%;
+  text-align: center;
+  box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+.overlay-panel h2 {
+  font-family: 'Great Vibes', cursive;
+  font-size: 24px; color: #1a0a06; margin-bottom: 18px;
+}
+
+.sign-opt {
+  display: block; width: 100%; text-align: left;
+  background: rgba(255,255,240,0.5);
+  border: 1px solid rgba(90,50,20,0.14);
+  border-radius: 2px; padding: 11px 14px;
+  font-size: 13.5px; color: #1a0a06; cursor: pointer;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  margin-bottom: 8px;
+}
+.sign-opt:hover { border-color: #8b2a16; background: rgba(255,255,240,0.85); }
+
+#signInputWrap { margin-top: 12px; }
+#signInputWrap input {
+  width: 100%; background: transparent;
+  border: none; border-bottom: 1px solid rgba(90,60,20,0.25);
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 15px; color: #1a0a06; padding: 8px 2px;
+  outline: none; text-align: center; caret-color: #8b2a16;
+}
+
+.pub-btn {
+  margin-top: 14px;
+  background: #5a0e08; color: #f5eed8; border: none;
+  padding: 9px 24px;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 12px; letter-spacing: 0.06em;
+  cursor: pointer; border-radius: 2px;
+}
+.pub-btn:hover { background: #8b2a16; }
+
+.back-link {
+  display: block; margin-top: 16px;
+  background: none; border: none;
+  color: #8b2a16;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 11px; cursor: pointer;
+}
+.back-link:hover { text-decoration: underline; }
+
+/* ── Genre section ── */
+.genre-section {
+  margin-bottom: 12px; text-align: left;
+}
+.genre-label {
+  display: block;
+  font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+  color: #4a2e10; opacity: 0.55; margin-bottom: 6px;
+}
+.genre-select {
+  width: 100%; padding: 8px 10px;
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 13px; color: #1a0a06;
+  background: rgba(255,255,240,0.5);
+  border: 1px solid rgba(90,50,20,0.16);
+  border-radius: 2px; outline: none; cursor: pointer;
+  -webkit-appearance: none; appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%234a2e10' opacity='0.4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+}
+.genre-select:focus { border-color: #8b2a16; }
+.genre-custom {
+  width: 100%; margin-top: 6px;
+  background: transparent;
+  border: none; border-bottom: 1px solid rgba(90,60,20,0.25);
+  font-family: 'Palatino Linotype', Palatino, Georgia, serif;
+  font-size: 13px; color: #1a0a06; padding: 6px 2px;
+  outline: none; caret-color: #8b2a16;
+}
+.sign-divider {
+  width: 100%; height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(90,50,20,0.15), transparent);
+  margin: 14px 0;
+}
+
+.pub-confirm { text-align: center; }
+.pub-icon { font-size: 36px; margin-bottom: 8px; }
+.pub-confirm p {
+  font-size: 12px; color: #4a2e10; opacity: 0.55;
+  font-style: italic; margin-top: 10px;
+}
+</style>
+</head>
+<body>
+
+<div id="ui" class="hidden">
+  <button id="closeBtn" class="close-btn hidden" onclick="doClose()">&#x2715;</button>
+
+  <div class="uvbook">
+    <div id="pages" class="pages">
+      <!-- Pages generated by JS -->
+    </div>
+  </div>
+
+  <!-- Writer nav bar -->
+  <div id="writerNav" class="writer-nav hidden">
+    <button id="navSave" class="nav-save" onclick="saveDraft()">&#128190; Save &amp; Close</button>
+    <button id="navPrev" onclick="writerPrev()">&#8592; Previous</button>
+    <div class="nav-center">
+      <div id="navInfo" class="nav-info"></div>
+      <div id="dots"></div>
+    </div>
+    <button id="navNext" onclick="writerNext()">Next &#8594;</button>
+    <button id="navFinish" class="nav-finish" onclick="writerFinish()">Finish &amp; Publish</button>
+  </div>
+
+  <!-- Sign overlay -->
+  <div id="signOverlay" class="overlay hidden">
+    <div class="overlay-panel">
+      <h2>Finalize Your Book</h2>
+      
+      <div class="genre-section">
+        <label class="genre-label">Genre</label>
+        <select id="iGenre" class="genre-select">
+          <option value="">— Select a genre —</option>
+          <option value="Fiction">Fiction</option>
+          <option value="Non-Fiction">Non-Fiction</option>
+          <option value="Mystery">Mystery</option>
+          <option value="Horror">Horror</option>
+          <option value="Romance">Romance</option>
+          <option value="Adventure">Adventure</option>
+          <option value="Fantasy">Fantasy</option>
+          <option value="Sci-Fi">Sci-Fi</option>
+          <option value="History">History</option>
+          <option value="Comedy">Comedy</option>
+          <option value="Drama">Drama</option>
+          <option value="Poetry">Poetry</option>
+          <option value="Journal">Journal</option>
+          <option value="Guide">Guide</option>
+          <option value="Other">Other</option>
+        </select>
+        <input id="iGenreCustom" class="genre-custom hidden" type="text" placeholder="Enter custom genre..." maxlength="30" autocomplete="off">
+      </div>
+      
+      <div class="sign-divider"></div>
+      
+      <button class="sign-opt" onclick="showSignInput()">&#9998;&#xFE0E; &nbsp; Yes &mdash; add my signature</button>
+      <button class="sign-opt" onclick="doPublish(false)">&#128220; &nbsp; No &mdash; publish anonymously</button>
+      <div id="signInputWrap" class="hidden">
+        <input id="iSig" type="text" placeholder="Your name or pen name..." maxlength="15" autocomplete="off">
+        <button class="pub-btn" onclick="doPublish(true)">Publish Book &#8594;</button>
+      </div>
+      <button class="back-link" onclick="hideSign()">&#8592; Back to writing</button>
+    </div>
+  </div>
+
+  <!-- Published confirmation -->
+  <div id="pubOverlay" class="overlay hidden">
+    <div class="overlay-panel pub-confirm">
+      <div class="pub-icon">&#128214;</div>
+      <h2 id="pubTitle"></h2>
+      <p>Your book has been added to your inventory.</p>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════
+   uv-books · Page-Flip UI Engine
+   ══════════════════════════════════════════════════════════════ */
+
+var MAX = 20, MAXC = 800;
+var mode = null;
+var bk = { title:'', pages:[], images:[], signed:false, signature:'', genre:'', font:'' };
+var writerSpread = 0;
+var totalPhysPages = 0;
+var readInfo = null;
+
+function fresh() {
+  bk = { title:'', pages:[], images:[], signed:false, signature:'', genre:'', font:'' };
+  for (var i = 0; i < MAX; i++) {
+    bk.pages.push('');
+    bk.images.push([]);
+  }
+  writerSpread = 0;
+}
+
+// ── NUI messages ──
+window.addEventListener('message', function(e) {
+  if (!e.data) return;
+  if (e.data.action === 'openBookWriter') openWriter(e.data.draft || null);
+  if (e.data.action === 'openBookReader') openReader(e.data.info, e.data.page || 1);
+  if (e.data.action === 'escPressed')     doClose();
+});
+
+window.addEventListener('keydown', function(e) {
+  if (e.key === 'Escape') doClose();
+});
+
+// ══════════════════════════════════════
+// PAGE FLIP ENGINE
+// ══════════════════════════════════════
+
+function makePage(num, extraClass) {
+  var div = document.createElement('div');
+  div.className = 'page' + (extraClass ? ' ' + extraClass : '');
+  div.dataset.pageNum = num;
+  return div;
+}
+
+function setupZIndex() {
+  var pages = document.querySelectorAll('#pages .page');
+  for (var i = 0; i < pages.length; i++) {
+    if (i % 2 === 0) {
+      pages[i].style.zIndex = (pages.length - i);
+    }
+  }
+}
+
+function flipPair(spreadIdx, flip) {
+  var pages = document.querySelectorAll('#pages .page');
+  var i1 = spreadIdx * 2;
+  var i2 = spreadIdx * 2 + 1;
+  if (i1 < pages.length) {
+    if (flip) pages[i1].classList.add('flipped');
+    else      pages[i1].classList.remove('flipped');
+  }
+  if (i2 < pages.length) {
+    if (flip) pages[i2].classList.add('flipped');
+    else      pages[i2].classList.remove('flipped');
+  }
+}
+
+// ══════════════════════════════════════
+// WRITER
+// ══════════════════════════════════════
+
+function openWriter(draft) {
+  fresh();
+  mode = 'writer';
+  
+  // Load draft if resuming
+  if (draft) {
+    if (draft.title) bk.title = draft.title;
+    if (draft.pages) {
+      for (var i = 0; i < MAX; i++) {
+        var pg = draft.pages[i] || draft.pages[String(i)] || draft.pages[i+1] || draft.pages[String(i+1)] || '';
+        bk.pages[i] = (typeof pg === 'string') ? pg : '';
+      }
+    }
+    if (draft.images) {
+      var rawImg = draft.images;
+      for (var i = 0; i < MAX; i++) {
+        var imgs = rawImg[i] || rawImg[String(i)] || rawImg[i+1] || rawImg[String(i+1)] || [];
+        if (imgs && !Array.isArray(imgs)) imgs = objectToArray(imgs);
+        bk.images[i] = imgs || [];
+      }
+    }
+    if (draft.font) bk.font = draft.font;
+  }
+  
+  buildWriterBook(!!draft);
+  document.getElementById('ui').classList.remove('hidden');
+  document.getElementById('closeBtn').classList.remove('hidden');
+  document.getElementById('writerNav').classList.add('hidden');
+  document.getElementById('signOverlay').classList.add('hidden');
+  document.getElementById('pubOverlay').classList.add('hidden');
+  
+  if (draft && draft.title) {
+    // Skip title step, go straight to writing
+    document.getElementById('coverTitleInput').value = bk.title;
+    document.getElementById('insideTitle').textContent = bk.title;
+    // Restore font selection
+    if (bk.font) {
+      var sel = document.getElementById('fontSelect');
+      if (sel) sel.value = bk.font;
+      applyBookFont(bk.font);
+    }
+    document.getElementById('writerNav').classList.remove('hidden');
+    writerSpread = 0;
+    writerNext();
+  } else {
+    setTimeout(function() {
+      var ti = document.getElementById('coverTitleInput');
+      if (ti) ti.focus();
+    }, 100);
+  }
+}
+
+function buildWriterBook(isDraft) {
+  var c = document.getElementById('pages');
+  c.innerHTML = '';
+
+  // 24 pages: front + inside + 20 content + end + back
+  totalPhysPages = 24;
+
+  // Page 1: Front cover — title input + font picker
+  var p1 = makePage(1, 'front-cover');
+  p1.innerHTML =
+    '<div class="cover-content">' +
+      '<div class="cover-title-area">' +
+        '<input id="coverTitleInput" class="cover-input" type="text" ' +
+          'placeholder="Enter your title..." maxlength="20" autocomplete="off">' +
+      '</div>' +
+      '<div class="font-picker">' +
+        '<div class="font-picker-label">Choose a Font</div>' +
+        '<select id="fontSelect" onchange="previewFont()">' +
+          '<option value="Palatino Linotype" style="font-family:Palatino Linotype">Classic Serif</option>' +
+          '<option value="Merriweather" style="font-family:Merriweather">Merriweather</option>' +
+          '<option value="Cinzel" style="font-family:Cinzel">Cinzel</option>' +
+          '<option value="Lato" style="font-family:Lato">Modern Sans</option>' +
+          '<option value="Zilla Slab" style="font-family:Zilla Slab">Zilla Slab</option>' +
+          '<option value="Great Vibes" style="font-family:Great Vibes">Script</option>' +
+          '<option value="Dancing Script" style="font-family:Dancing Script">Dancing Script</option>' +
+          '<option value="Caveat" style="font-family:Caveat">Handwritten</option>' +
+          '<option value="Indie Flower" style="font-family:Indie Flower">Indie</option>' +
+          '<option value="Special Elite" style="font-family:Special Elite">Typewriter</option>' +
+          '<option value="Orbitron" style="font-family:Orbitron">Futuristic</option>' +
+          '<option value="Rajdhani" style="font-family:Rajdhani">Tech</option>' +
+        '</select>' +
+        '<div class="font-preview" id="fontPreview">The quick brown fox jumps over the lazy dog</div>' +
+      '</div>' +
+      '<button class="cover-btn" onclick="doBeginWriting()">Begin Writing &#8594;</button>' +
+    '</div>';
+  c.appendChild(p1);
+
+  // Page 2: Inside front — decorative
+  var p2 = makePage(2, '');
+  p2.innerHTML =
+    '<div class="inside-front">' +
+      '<div class="inside-ornament">&#10022;</div>' +
+      '<div class="inside-rule"></div>' +
+      '<div class="inside-title" id="insideTitle">A New Story</div>' +
+      '<div class="inside-rule"></div>' +
+      '<div class="inside-author">Begins Here</div>' +
+      '<div class="inside-ornament" style="font-size:0.8vw;opacity:0.3;">&#10087;</div>' +
+    '</div>';
+  c.appendChild(p2);
+
+  // Pages 3–22: 20 content textareas
+  for (var i = 0; i < MAX; i++) {
+    var p = makePage(i + 3, '');
+    p.innerHTML =
+      '<div class="page-inner" id="pi' + i + '">' +
+        '<div class="page-num">Page ' + (i + 1) + '</div>' +
+        '<button class="add-img-btn" data-idx="' + i + '" onclick="showImgPopup(' + i + ')" title="Add image">&#x1F5BC;</button>' +
+        '<textarea class="write-area" id="ta' + i + '" data-idx="' + i + '" ' +
+          'placeholder="Write here..." maxlength="' + MAXC + '"></textarea>' +
+        '<div class="char-count" id="cc' + i + '">0 / ' + MAXC + '</div>' +
+      '</div>';
+    c.appendChild(p);
+  }
+
+  // Page 23: End marker
+  var p23 = makePage(23, '');
+  p23.innerHTML =
+    '<div class="inside-front">' +
+      '<div class="inside-ornament">&#10022;</div>' +
+      '<div class="inside-rule"></div>' +
+      '<div class="inside-author" style="font-size:0.6vw;">End of Pages</div>' +
+    '</div>';
+  c.appendChild(p23);
+
+  // Page 24: Back cover
+  var p24 = makePage(24, 'back-cover');
+  c.appendChild(p24);
+
+  setupZIndex();
+
+  // Title enter key
+  document.getElementById('coverTitleInput').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') doBeginWriting();
+  });
+
+  // Textarea listeners
+  for (var i = 0; i < MAX; i++) {
+    (function(idx) {
+      var ta = document.getElementById('ta' + idx);
+      if (!ta) return;
+      ta.addEventListener('input', function() {
+        bk.pages[idx] = this.value;
+        updateCharCount(idx);
+        updateDots();
+      });
+    })(i);
+  }
+  
+  // Load draft content into textareas and place images
+  if (isDraft) {
+    for (var i = 0; i < MAX; i++) {
+      var ta = document.getElementById('ta' + i);
+      if (ta && bk.pages[i]) {
+        ta.value = bk.pages[i];
+        updateCharCount(i);
+      }
+      // Place saved images
+      if (bk.images[i] && bk.images[i].length > 0) {
+        for (var j = 0; j < bk.images[i].length; j++) {
+          if (bk.images[i][j] && bk.images[i][j].url) {
+            placeWriterImage(i, j, bk.images[i][j]);
+          }
+        }
+      }
+    }
+  }
+}
+
+// ── Font Picker ──
+
+function previewFont() {
+  var sel = document.getElementById('fontSelect');
+  var prev = document.getElementById('fontPreview');
+  if (sel && prev) {
+    prev.style.fontFamily = "'" + sel.value + "', serif";
+  }
+}
+
+function applyBookFont(fontName) {
+  if (!fontName) return;
+  var ff = "'" + fontName + "', serif";
+  // Apply to all writer textareas
+  var tas = document.querySelectorAll('.write-area');
+  for (var i = 0; i < tas.length; i++) {
+    tas[i].style.fontFamily = ff;
+  }
+  // Apply to reader text
+  var rts = document.querySelectorAll('.read-text');
+  for (var i = 0; i < rts.length; i++) {
+    rts[i].style.fontFamily = ff;
+  }
+  // Apply to titles
+  var titles = document.querySelectorAll('.cover-title-display, .inside-title, .cover-input');
+  for (var i = 0; i < titles.length; i++) {
+    titles[i].style.fontFamily = ff;
+  }
+}
+
+function doBeginWriting() {
+  var v = document.getElementById('coverTitleInput').value.trim();
+  if (!v) { document.getElementById('coverTitleInput').focus(); return; }
+  bk.title = v;
+  bk.font = document.getElementById('fontSelect').value || 'Palatino Linotype';
+  document.getElementById('insideTitle').textContent = v;
+  document.getElementById('writerNav').classList.remove('hidden');
+  applyBookFont(bk.font);
+  writerSpread = 0;
+  writerNext();
+}
+
+function writerNext() {
+  var maxSpread = (totalPhysPages / 2) - 1;
+  if (writerSpread >= maxSpread) return;
+  flipPair(writerSpread, true);
+  writerSpread++;
+  updateWriterNav();
+  focusCurrentTextarea();
+}
+
+function writerPrev() {
+  if (writerSpread <= 1) return;
+  writerSpread--;
+  flipPair(writerSpread, false);
+  updateWriterNav();
+  focusCurrentTextarea();
+}
+
+function focusCurrentTextarea() {
+  // Right page of current spread = DOM index writerSpread * 2
+  var rightPage = document.querySelectorAll('#pages .page')[writerSpread * 2];
+  if (rightPage) {
+    var ta = rightPage.querySelector('.write-area');
+    if (ta) setTimeout(function() { ta.focus(); }, 500);
+  }
+}
+
+function updateWriterNav() {
+  var leftPhys  = writerSpread * 2;
+  var rightPhys = writerSpread * 2 + 1;
+
+  var leftContent  = (leftPhys >= 3 && leftPhys <= 22)  ? leftPhys - 3  : -1;
+  var rightContent = (rightPhys >= 3 && rightPhys <= 22) ? rightPhys - 3 : -1;
+
+  var info = '';
+  if (leftContent >= 0 && rightContent >= 0) {
+    info = 'Pages ' + (leftContent + 1) + '–' + (rightContent + 1) + ' of ' + MAX;
+  } else if (rightContent >= 0) {
+    info = 'Page ' + (rightContent + 1) + ' of ' + MAX;
+  } else if (leftContent >= 0) {
+    info = 'Page ' + (leftContent + 1) + ' of ' + MAX;
+  } else {
+    info = '';
+  }
+  document.getElementById('navInfo').textContent = info;
+
+  var maxSpread = (totalPhysPages / 2) - 1;
+  document.getElementById('navPrev').disabled  = (writerSpread <= 1);
+  document.getElementById('navNext').disabled  = (writerSpread >= maxSpread);
+
+  updateDots();
+}
+
+function updateCharCount(idx) {
+  var ta = document.getElementById('ta' + idx);
+  var cc = document.getElementById('cc' + idx);
+  if (!ta || !cc) return;
+  var len = ta.value.length;
+  cc.textContent = len + ' / ' + MAXC;
+  cc.className = 'char-count' + (len > MAXC * 0.85 ? ' warn' : '');
+}
+
+function updateDots() {
+  var dc = document.getElementById('dots');
+  dc.innerHTML = '';
+  var leftPhys  = writerSpread * 2;
+  var rightPhys = writerSpread * 2 + 1;
+
+  for (var i = 0; i < MAX; i++) {
+    var d = document.createElement('div');
+    var physPage = i + 3;
+    var isCurrent = (physPage === leftPhys || physPage === rightPhys);
+    var hasText = bk.pages[i] && bk.pages[i].trim();
+    d.className = 'dot' + (hasText ? ' has' : '') + (isCurrent ? ' cur' : '');
+    dc.appendChild(d);
+  }
+}
+
+// ── Save Draft ──
+
+function saveDraft() {
+  // Collect all current textarea content
+  for (var i = 0; i < MAX; i++) {
+    var ta = document.getElementById('ta' + i);
+    if (ta) bk.pages[i] = ta.value;
+  }
+  
+  // Clean images
+  var cleanImages = [];
+  for (var i = 0; i < MAX; i++) {
+    var pageImgs = [];
+    if (bk.images[i]) {
+      for (var j = 0; j < bk.images[i].length; j++) {
+        if (bk.images[i][j]) pageImgs.push(bk.images[i][j]);
+      }
+    }
+    cleanImages.push(pageImgs);
+  }
+  
+  var draft = {
+    title: bk.title,
+    pages: bk.pages,
+    images: cleanImages,
+    font: bk.font
+  };
+  
+  post('bookDraftSaved', draft);
+  
+  // Close UI
+  document.getElementById('ui').classList.add('hidden');
+  document.getElementById('closeBtn').classList.add('hidden');
+  document.getElementById('writerNav').classList.add('hidden');
+  mode = null;
+  post('bookClosed', {});
+}
+
+// ── Sign / Publish ──
+
+function writerFinish() {
+  for (var i = 0; i < MAX; i++) {
+    var ta = document.getElementById('ta' + i);
+    if (ta) bk.pages[i] = ta.value;
+  }
+  var hasContent = bk.pages.some(function(p) { return p && p.trim(); }) ||
+                   bk.images.some(function(arr) { return arr && arr.length > 0; });
+  if (!hasContent) return;
+
+  // Reset genre fields
+  document.getElementById('iGenre').value = '';
+  document.getElementById('iGenreCustom').value = '';
+  document.getElementById('iGenreCustom').classList.add('hidden');
+
+  document.getElementById('signOverlay').classList.remove('hidden');
+  document.getElementById('signInputWrap').classList.add('hidden');
+}
+
+function showSignInput() {
+  document.getElementById('signInputWrap').classList.remove('hidden');
+  setTimeout(function() { document.getElementById('iSig').focus(); }, 50);
+}
+
+function hideSign() {
+  document.getElementById('signOverlay').classList.add('hidden');
+}
+
+function doPublish(signed) {
+  if (signed) {
+    var s = document.getElementById('iSig').value.trim();
+    if (!s) { document.getElementById('iSig').focus(); return; }
+    bk.signed = true;  bk.signature = s;
+  } else {
+    bk.signed = false;  bk.signature = '';
+  }
+
+  // Capture genre
+  var genreVal = document.getElementById('iGenre').value;
+  if (genreVal === 'Other') {
+    genreVal = document.getElementById('iGenreCustom').value.trim() || 'Other';
+  }
+  bk.genre = genreVal || '';
+
+  document.getElementById('signOverlay').classList.add('hidden');
+  document.getElementById('pubTitle').textContent = '\u201C' + bk.title + '\u201D';
+  document.getElementById('pubOverlay').classList.remove('hidden');
+
+  // Clean images — remove null entries from deletions
+  var cleanImages = [];
+  for (var i = 0; i < MAX; i++) {
+    var pageImgs = [];
+    if (bk.images[i]) {
+      for (var j = 0; j < bk.images[i].length; j++) {
+        if (bk.images[i][j]) pageImgs.push(bk.images[i][j]);
+      }
+    }
+    cleanImages.push(pageImgs);
+  }
+  bk.images = cleanImages;
+
+  post('bookPublished', bk);
+
+  setTimeout(function() {
+    document.getElementById('ui').classList.add('hidden');
+    document.getElementById('pubOverlay').classList.add('hidden');
+    document.getElementById('writerNav').classList.add('hidden');
+    document.getElementById('closeBtn').classList.add('hidden');
+    post('bookClosed', {});
+  }, 2500);
+}
+
+// ══════════════════════════════════════
+// READER
+// ══════════════════════════════════════
+
+function openReader(info) {
+  mode = 'reader';
+  readInfo = info;
+  buildReaderBook(info);
+  if (info.font) applyBookFont(info.font);
+  document.getElementById('ui').classList.remove('hidden');
+  document.getElementById('closeBtn').classList.remove('hidden');
+  document.getElementById('writerNav').classList.add('hidden');
+  document.getElementById('signOverlay').classList.add('hidden');
+  document.getElementById('pubOverlay').classList.add('hidden');
+}
+
+function buildReaderBook(info) {
+  var c = document.getElementById('pages');
+  c.innerHTML = '';
+
+  // Gather content
+  var raw = info.content || info.pages || {};
+  var rawImages = info.images || {};
+  
+  // Normalize images into a 0-indexed array
+  // Lua 1-indexes arrays, so data may arrive as {"1":[...], "2":[...]} or [null, [...], [...]]
+  var normImages = [];
+  for (var i = 0; i < MAX; i++) normImages.push([]);
+  
+  if (Array.isArray(rawImages)) {
+    // Already a JS array — could be 0-indexed or have null at [0] from Lua
+    for (var i = 0; i < rawImages.length && i < MAX; i++) {
+      if (rawImages[i] && typeof rawImages[i] === 'object') {
+        normImages[i] = Array.isArray(rawImages[i]) ? rawImages[i] : objectToArray(rawImages[i]);
+      }
+    }
+    // Check if it looks 1-indexed (normImages[0] is empty but shouldn't be)
+    if (normImages[0].length === 0 && rawImages.length > MAX) {
+      for (var i = 0; i < MAX; i++) {
+        var src = rawImages[i + 1];
+        if (src && typeof src === 'object') {
+          normImages[i] = Array.isArray(src) ? src : objectToArray(src);
+        }
+      }
+    }
+  } else {
+    // Object with string/numeric keys — try both 0-indexed and 1-indexed
+    var found0 = false, found1 = false;
+    for (var i = 0; i < MAX; i++) {
+      if (rawImages[i] || rawImages[String(i)]) found0 = true;
+      if (rawImages[i+1] || rawImages[String(i+1)]) found1 = true;
+    }
+    var offset = (found1 && !found0) ? 1 : 0;
+    for (var i = 0; i < MAX; i++) {
+      var key = i + offset;
+      var src = rawImages[key] || rawImages[String(key)];
+      if (src && typeof src === 'object') {
+        normImages[i] = Array.isArray(src) ? src : objectToArray(src);
+      }
+    }
+  }
+  
+  var contentPages = [];
+  var contentImages = [];
+  for (var i = 0; i < MAX; i++) {
+    var t = (raw[i] !== undefined ? raw[i] : (raw[String(i)] || '')).toString().trim();
+    var imgs = normImages[i] || [];
+    if (t || (imgs && imgs.length > 0)) {
+      contentPages.push(t);
+      contentImages.push(imgs);
+    }
+  }
+  if (contentPages.length === 0) {
+    contentPages.push('(This book is empty.)');
+    contentImages.push([]);
+  }
+  // Build page list
+  var physList = [];
+
+  // Front cover
+  physList.push({ type:'front-cover', data: info });
+
+  // Inside front
+  physList.push({ type:'inside-front', data: info });
+
+  // Content
+  for (var i = 0; i < contentPages.length; i++) {
+    physList.push({ type:'content', text: contentPages[i], num: i + 1, images: contentImages[i] || [] });
+  }
+
+  // Pad to make total even (including back cover)
+  if ((physList.length + 1) % 2 !== 0) {
+    physList.push({ type:'blank' });
+  }
+
+  // Back cover
+  physList.push({ type:'back-cover' });
+
+  totalPhysPages = physList.length;
+
+  // Create elements
+  for (var i = 0; i < physList.length; i++) {
+    var pg = physList[i];
+    var physNum = i + 1;
+    var el;
+
+    if (pg.type === 'front-cover') {
+      el = makePage(physNum, 'front-cover reader-page');
+      var author = (pg.data.signed && pg.data.signature) ? pg.data.signature : 'Anonymous';
+      el.innerHTML =
+        '<div class="cover-content">' +
+          '<div class="cover-title-area">' +
+            '<div class="cover-title-display">' + escHtml(pg.data.title || 'Untitled') + '</div>' +
+            '<div class="cover-author-display">by ' + escHtml(author) + '</div>' +
+          '</div>' +
+        '</div>';
+
+    } else if (pg.type === 'inside-front') {
+      el = makePage(physNum, 'reader-page');
+      var author = (pg.data.signed && pg.data.signature) ? pg.data.signature : 'Anonymous';
+      el.innerHTML =
+        '<div class="inside-front">' +
+          '<div class="inside-ornament">&#10022;</div>' +
+          '<div class="inside-rule"></div>' +
+          '<div class="inside-title">' + escHtml(pg.data.title || 'Untitled') + '</div>' +
+          '<div class="inside-rule"></div>' +
+          '<div class="inside-author">by ' + escHtml(author) + '</div>' +
+          '<div class="inside-ornament" style="font-size:0.8vw;opacity:0.3;">&#10087;</div>' +
+        '</div>';
+
+    } else if (pg.type === 'content') {
+      el = makePage(physNum, 'reader-page');
+      var imgHtml = '';
+      if (pg.images && pg.images.length > 0) {
+        for (var j = 0; j < pg.images.length; j++) {
+          var im = pg.images[j];
+          if (!im || !im.url) continue;
+          imgHtml += '<div class="page-img reader-img" style="left:' + (im.x||0) + '%;top:' + (im.y||0) + '%;width:' + (im.w||40) + '%;height:' + (im.h||30) + '%;">' +
+            '<img src="' + escHtml(im.url) + '">' +
+          '</div>';
+        }
+      }
+      el.innerHTML =
+        '<div class="page-inner">' +
+          '<div class="page-num">Page ' + pg.num + '</div>' +
+          '<div class="read-text">' + escHtml(pg.text) + '</div>' +
+          imgHtml +
+        '</div>';
+
+    } else if (pg.type === 'blank') {
+      el = makePage(physNum, 'reader-page');
+
+    } else if (pg.type === 'back-cover') {
+      el = makePage(physNum, 'back-cover reader-page');
+    }
+
+    c.appendChild(el);
+  }
+
+  setupZIndex();
+  setupReaderFlip();
+}
+
+function setupReaderFlip() {
+  var pages = document.querySelectorAll('#pages .page');
+  for (var i = 0; i < pages.length; i++) {
+    (function(idx) {
+      var page = pages[idx];
+      var pageNum = idx + 1;
+
+      page.addEventListener('click', function() {
+        if (pageNum % 2 === 1) {
+          // Odd (right side) → flip forward
+          this.classList.add('flipped');
+          if (this.nextElementSibling) this.nextElementSibling.classList.add('flipped');
+        } else {
+          // Even (left side, flipped) → flip backward
+          this.classList.remove('flipped');
+          if (this.previousElementSibling) this.previousElementSibling.classList.remove('flipped');
+        }
+      });
+    })(i);
+  }
+}
+
+// ══════════════════════════════════════
+// CLOSE / HELPERS
+// ══════════════════════════════════════
+
+function doClose() {
+  document.getElementById('ui').classList.add('hidden');
+  document.getElementById('closeBtn').classList.add('hidden');
+  document.getElementById('writerNav').classList.add('hidden');
+  document.getElementById('signOverlay').classList.add('hidden');
+  document.getElementById('pubOverlay').classList.add('hidden');
+  readInfo = null;
+  mode = null;
+  post('bookClosed', {});
+}
+
+function escHtml(str) {
+  var d = document.createElement('div');
+  d.textContent = str || '';
+  return d.innerHTML;
+}
+
+function objectToArray(obj) {
+  var arr = [];
+  for (var k in obj) {
+    if (obj.hasOwnProperty(k) && obj[k] && obj[k].url) arr.push(obj[k]);
+  }
+  return arr;
+}
+
+function post(name, data) {
+  fetch('https://uv-books/' + name, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+  }).then(function(r) { console.log('[uv-books] ' + name + ' -> ' + r.status); })
+   .catch(function(e) { console.log('[uv-books] ' + name + ' ERR: ' + e); });
+}
+
+// Signature enter key
+document.getElementById('iSig').addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') doPublish(true);
+});
+
+// Genre "Other" toggle
+document.getElementById('iGenre').addEventListener('change', function() {
+  var custom = document.getElementById('iGenreCustom');
+  if (this.value === 'Other') {
+    custom.classList.remove('hidden');
+    setTimeout(function() { custom.focus(); }, 50);
+  } else {
+    custom.classList.add('hidden');
+    custom.value = '';
+  }
+});
+
+// ══════════════════════════════════════
+// PAGE IMAGES · Drag / Resize / URL
+// ══════════════════════════════════════
+
+var activePopup = null;
+
+function showImgPopup(idx) {
+  // Remove any existing popup
+  if (activePopup) activePopup.remove();
+
+  var pi = document.getElementById('pi' + idx);
+  if (!pi) return;
+
+  var popup = document.createElement('div');
+  popup.className = 'img-url-popup';
+  popup.innerHTML =
+    '<input type="text" id="imgUrlInput" placeholder="Paste image URL (Imgur, Discord, etc)..." autocomplete="off">' +
+    '<div class="popup-row">' +
+      '<button class="popup-cancel" onclick="closeImgPopup()">Cancel</button>' +
+      '<button class="popup-add" onclick="confirmImgUrl(' + idx + ')">Add Image</button>' +
+    '</div>';
+  pi.appendChild(popup);
+  activePopup = popup;
+
+  setTimeout(function() {
+    var inp = document.getElementById('imgUrlInput');
+    if (inp) inp.focus();
+  }, 50);
+
+  // Enter key support
+  popup.querySelector('input').addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') confirmImgUrl(idx);
+    if (e.key === 'Escape') closeImgPopup();
+  });
+}
+
+function closeImgPopup() {
+  if (activePopup) { activePopup.remove(); activePopup = null; }
+}
+
+function confirmImgUrl(idx) {
+  var inp = document.getElementById('imgUrlInput');
+  if (!inp) return;
+  var url = inp.value.trim();
+  if (!url) return;
+
+  // Validate URL
+  if (!/^https?:\/\//i.test(url)) {
+    inp.style.borderBottomColor = '#8b2a16';
+    inp.placeholder = 'Must be a full URL (https://...)';
+    inp.value = '';
+    return;
+  }
+
+  closeImgPopup();
+
+  // Default: centered, 40% width, 30% height
+  var imgData = { url: url, x: 30, y: 30, w: 40, h: 30 };
+  bk.images[idx].push(imgData);
+
+  var imgIdx = bk.images[idx].length - 1;
+  placeWriterImage(idx, imgIdx, imgData);
+}
+
+function placeWriterImage(pageIdx, imgIdx, data) {
+  var pi = document.getElementById('pi' + pageIdx);
+  if (!pi) return;
+
+  var wrap = document.createElement('div');
+  wrap.className = 'page-img selected';
+  wrap.dataset.pageIdx = pageIdx;
+  wrap.dataset.imgIdx = imgIdx;
+  wrap.style.left   = data.x + '%';
+  wrap.style.top    = data.y + '%';
+  wrap.style.width  = data.w + '%';
+  wrap.style.height = data.h + '%';
+
+  var img = document.createElement('img');
+  img.src = data.url;
+  img.onerror = function() {
+    wrap.style.background = 'rgba(139,42,22,0.1)';
+    wrap.style.display = 'flex';
+    wrap.style.alignItems = 'center';
+    wrap.style.justifyContent = 'center';
+    wrap.innerHTML = '<span style="font-size:0.5vw;color:#8b2a16;opacity:0.6;">Image failed</span>';
+    addImgControls(wrap, pageIdx, imgIdx);
+  };
+  wrap.appendChild(img);
+
+  addImgControls(wrap, pageIdx, imgIdx);
+  pi.appendChild(wrap);
+
+  // Init drag
+  initDrag(wrap, pageIdx, imgIdx);
+}
+
+function addImgControls(wrap, pageIdx, imgIdx) {
+  // Resize handle
+  var rh = document.createElement('div');
+  rh.className = 'img-resize';
+  wrap.appendChild(rh);
+  initResize(rh, wrap, pageIdx, imgIdx);
+
+  // Delete button
+  var del = document.createElement('button');
+  del.className = 'img-delete';
+  del.textContent = '\u2715';
+  del.addEventListener('click', function(e) {
+    e.stopPropagation();
+    wrap.remove();
+    bk.images[pageIdx][imgIdx] = null;
+  });
+  wrap.appendChild(del);
+}
+
+// ── Drag ──
+function initDrag(el, pageIdx, imgIdx) {
+  var startX, startY, startLeft, startTop, parent;
+  var dragging = false;
+
+  el.addEventListener('mousedown', function(e) {
+    if (e.target.classList.contains('img-resize') || e.target.classList.contains('img-delete')) return;
+    e.preventDefault(); e.stopPropagation();
+    dragging = true;
+    el.classList.add('dragging');
+    parent = el.parentElement;
+    startX = e.clientX;
+    startY = e.clientY;
+    startLeft = parseFloat(el.style.left) || 0;
+    startTop  = parseFloat(el.style.top)  || 0;
+
+    function onMove(e2) {
+      if (!dragging) return;
+      var pw = parent.offsetWidth;
+      var ph = parent.offsetHeight;
+      var dx = ((e2.clientX - startX) / pw) * 100;
+      var dy = ((e2.clientY - startY) / ph) * 100;
+      var nx = Math.max(0, Math.min(100 - parseFloat(el.style.width), startLeft + dx));
+      var ny = Math.max(0, Math.min(100 - parseFloat(el.style.height), startTop + dy));
+      el.style.left = nx + '%';
+      el.style.top  = ny + '%';
+    }
+
+    function onUp() {
+      dragging = false;
+      el.classList.remove('dragging');
+      // Save position
+      if (bk.images[pageIdx][imgIdx]) {
+        bk.images[pageIdx][imgIdx].x = parseFloat(el.style.left);
+        bk.images[pageIdx][imgIdx].y = parseFloat(el.style.top);
+      }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+// ── Resize ──
+function initResize(handle, el, pageIdx, imgIdx) {
+  handle.addEventListener('mousedown', function(e) {
+    e.preventDefault(); e.stopPropagation();
+    var parent = el.parentElement;
+    var startX = e.clientX;
+    var startY = e.clientY;
+    var startW = parseFloat(el.style.width) || 40;
+    var startH = parseFloat(el.style.height) || 30;
+
+    function onMove(e2) {
+      var pw = parent.offsetWidth;
+      var ph = parent.offsetHeight;
+      var dw = ((e2.clientX - startX) / pw) * 100;
+      var dh = ((e2.clientY - startY) / ph) * 100;
+      var nw = Math.max(8, Math.min(100, startW + dw));
+      var nh = Math.max(6, Math.min(100, startH + dh));
+      el.style.width  = nw + '%';
+      el.style.height = nh + '%';
+    }
+
+    function onUp() {
+      if (bk.images[pageIdx][imgIdx]) {
+        bk.images[pageIdx][imgIdx].w = parseFloat(el.style.width);
+        bk.images[pageIdx][imgIdx].h = parseFloat(el.style.height);
+      }
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+console.log('[uv-books] page-flip UI ready');
+</script>
+</body>
+</html>
