@@ -5,6 +5,8 @@
 **Discord For Uncanny Valley: https://discord.gg/xHhGMqSeFZ Please let me know if you have any issues or need help! We are more than just an RP server we are a community**
  
 *If you use this resource, a credit or a star on the repo is always appreciated but never required. Enjoy!*
+
+After Downloading: Remove the 2.0 from the folder name
  
 ---
  
