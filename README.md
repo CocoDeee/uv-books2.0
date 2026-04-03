@@ -6,7 +6,7 @@
  
 *If you use this resource, a credit or a star on the repo is always appreciated but never required. Enjoy!*
 
-After Downloading: Remove the 2.0 from the folder name
+## After Downloading: Remove the 2.0 from the folder name
  
 ---
  
@@ -87,6 +87,8 @@ The script auto-detects your framework and inventory on startup. No config neede
 ---
  
 ## Installation
+
+## After Downloading: Remove the 2.0 from the folder name
  
 ### 1. Add the resource
 Drop the `uv-books` folder into your server's `resources` directory.
